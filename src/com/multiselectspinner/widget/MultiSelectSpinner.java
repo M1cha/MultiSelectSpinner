@@ -16,17 +16,18 @@
 
 package com.multiselectspinner.widget;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-
-import android.app.AlertDialog;
+import org.holoeverywhere.app.AlertDialog;
+import org.holoeverywhere.widget.Spinner;
+import com.multiselectspinner.R;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.util.AttributeSet;
 import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 
 /**
@@ -34,8 +35,11 @@ import android.widget.SpinnerAdapter;
  * and the user presses it. This allows for the selection of more than one option.
  */
 public class MultiSelectSpinner extends Spinner implements OnMultiChoiceClickListener {
-    String[] _items = null;
-    boolean[] _selection = null;
+    private String[] _items = null;
+    private boolean[] _selection = null;
+    private String _title = null;
+    private int _icon=-1;
+    private SpinnerAdapter _adapter = null;
     
     ArrayAdapter<String> _proxyAdapter;
     
@@ -78,6 +82,8 @@ public class MultiSelectSpinner extends Spinner implements OnMultiChoiceClickLis
             throw new IllegalArgumentException("Argument 'which' is out of bounds.");
         }
     }
+    
+    
 
     /**
      * {@inheritDoc}
@@ -86,8 +92,18 @@ public class MultiSelectSpinner extends Spinner implements OnMultiChoiceClickLis
     public boolean performClick() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setMultiChoiceItems(_items, _selection, this);
+        builder.setNeutralButton(R.string.back_button_label, null);
+        if(_icon!=-1) builder.setIcon(_icon);
+        if(_title!=null) builder.setTitle(_title);
         builder.show();
         return true;
+    }
+    
+    public void setTitle(String title) {
+    	_title = title;
+    }
+    public void setIcon(int resId) {
+    	_icon = resId;
     }
     
     /**
@@ -96,7 +112,22 @@ public class MultiSelectSpinner extends Spinner implements OnMultiChoiceClickLis
      */
     @Override
     public void setAdapter(SpinnerAdapter adapter) {
-        throw new RuntimeException("setAdapter is not supported by MultiSelectSpinner.");
+    	// build arraylist
+    	ArrayList<String> al = new ArrayList<String>();
+    	for(int i=0; i<adapter.getCount(); i++) {
+    		al.add(i, adapter.getItem(i).toString());
+    	}
+    	
+    	// convert arraylist to string-array
+    	_items = new String[al.size()];
+    	_items = al.toArray(_items);
+    	
+    	// deselect everything
+    	_selection = new boolean[_items.length];
+    	Arrays.fill(_selection, false);
+    	
+    	// store adapter
+    	_adapter = adapter;
     }
     
     /**
@@ -176,6 +207,18 @@ public class MultiSelectSpinner extends Spinner implements OnMultiChoiceClickLis
             }
         }
         return selection;
+    }
+    
+    public ArrayList<Object> getSelectedItems() {
+    	ArrayList<Object> ret = new ArrayList<Object>();
+    	
+    	for (int i = 0; i < _items.length; ++i) {
+            if (_selection[i]) {
+                ret.add(_adapter.getItem(i));
+            }
+        }
+    	
+    	return ret;
     }
     
     /**
